@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>gyaanAI - DSA Chat</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <style>
+
+        :root {
+            --bg-primary: #1e1e2f;
+            --bg-secondary: #27293d;
+            --bg-tertiary: #3b3d55;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0b5;
+            --accent-primary: #8a4fff;
+            --accent-secondary: #4f8aff;
+            --accent-gradient: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; scrollbar-width: thin; scrollbar-color: var(--accent-primary) var(--bg-secondary); }
+        *::-webkit-scrollbar { width: 8px; }
+        *::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        *::-webkit-scrollbar-thumb { background-color: var(--accent-primary); border-radius: 10px; border: 2px solid var(--bg-secondary); }
+        body { font-family: 'Roboto', sans-serif; background-color: var(--bg-primary); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 260px; background-color: var(--bg-secondary); display: flex; flex-direction: column; padding: 15px; border-right: 1px solid var(--bg-tertiary); }
+        .sidebar-header { display: flex; align-items: center; padding: 10px 5px; margin-bottom: 20px; }
+        .sidebar-header .logo { font-size: 28px; color: var(--accent-primary); margin-right: 12px; }
+        .sidebar-header h1 { font-size: 1.5em; font-weight: 500; }
+        .new-chat-btn { display: flex; align-items: center; justify-content: center; background: var(--accent-gradient); color: white; border: none; border-radius: 8px; padding: 12px; font-size: 1em; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin-bottom: 20px; }
+        .new-chat-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(138, 79, 255, 0.3); }
+        .new-chat-btn .material-icons { margin-right: 8px; }
+        .chat-history { flex-grow: 1; overflow-y: auto; }
+        .chat-history-item { display: flex; align-items: center; padding: 12px 10px; border-radius: 8px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background-color 0.2s; color: var(--text-secondary); }
+        .chat-history-item:hover { background-color: var(--bg-tertiary); color: var(--text-primary); }
+        .chat-history-item.active { background-color: var(--accent-primary); color: white; font-weight: 500; }
+        .chat-history-item .material-icons { margin-right: 12px; font-size: 20px; }
+        .chat-area { flex-grow: 1; display: flex; flex-direction: column; background-color: var(--bg-primary); }
+        .chat-messages { flex-grow: 1; overflow-y: auto; padding: 20px 40px; display: flex; flex-direction: column; gap: 20px; }
+        .message { display: flex; gap: 15px; max-width: 80%; animation: fadeIn 0.5s ease-in-out; }
+        .message.user { align-self: flex-end; flex-direction: row-reverse; }
+        .message.bot, .message.model { align-self: flex-start; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; flex-shrink: 0; }
+        .user .avatar { background: var(--accent-gradient); }
+        .bot .avatar, .model .avatar { background-color: var(--bg-tertiary); }
+        .message-content { background-color: var(--bg-secondary); padding: 15px 20px; border-radius: 18px; }
+        .message.user .message-content { border-bottom-right-radius: 5px; }
+        .message.bot .message-content, .message.model .message-content { border-bottom-left-radius: 5px; }
+        .message-content p { line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; }
+        .typing-indicator { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 8px; height: 8px; background-color: var(--text-secondary); border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+        .dot:nth-child(3) { animation-delay: -0.32s; }
+        .chat-input-container { padding: 20px 40px; }
+        .chat-input-form { display: flex; align-items: center; background-color: var(--bg-secondary); border-radius: 12px; padding: 5px 5px 5px 20px; border: 1px solid var(--bg-tertiary); }
+        #user-input { flex-grow: 1; background: transparent; border: none; color: var(--text-primary); font-size: 1em; height: 50px; }
+        #user-input:focus { outline: none; }
+        #send-btn { background: var(--accent-primary); border: none; border-radius: 8px; width: 44px; height: 44px; cursor: pointer; display: flex; justify-content: center; align-items: center; color: white; transition: background-color 0.2s; }
+        #send-btn:hover { background-color: var(--accent-secondary); }
+        #send-btn.disabled { background-color: var(--bg-tertiary); cursor: not-allowed; }
+        .welcome-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; height: 100%; }
+        .welcome-screen h2 { font-size: 3em; font-weight: 700; }
+        .welcome-screen span { background: var(--accent-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .welcome-screen p { font-size: 1.2em; color: var(--text-secondary); margin-top: 10px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
+    </style>
+</head>
+<body>
+    <!-- Sidebar for Chat History -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <span class="material-icons logo">data_object</span>
+            <h1>gyaanAI</h1>
+        </div>
+        <button class="new-chat-btn" id="new-chat-btn">
+            <span class="material-icons">add</span>
+            New Chat
+        </button>
+        <nav class="chat-history" id="chat-history"></nav>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main class="chat-area">
+        <div class="chat-messages" id="chat-messages">
+             <div class="welcome-screen" id="welcome-screen">
+                <h2>Welcome to <span>gyaanAI</span></h2>
+                <p>Your personal expert for Data Structures & Algorithms. Start a new chat to begin.</p>
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <form class="chat-input-form" id="chat-form">
+                <input type="text" id="user-input" placeholder="Ask about Big O, linked lists, sorting algorithms..." autocomplete="off">
+                <button type="submit" id="send-btn">
+                    <span class="material-icons">send</span>
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        // JAVASCRIPT LOGIC EMBEDDED IN THE HTML
+        document.addEventListener("DOMContentLoaded", () => {
+            const chatForm = document.getElementById("chat-form");
+            const userInput = document.getElementById("user-input");
+            const sendBtn = document.getElementById("send-btn");
+            const chatMessages = document.getElementById("chat-messages");
+            const newChatBtn = document.getElementById("new-chat-btn");
+            const chatHistoryContainer = document.getElementById("chat-history");
+            const welcomeScreen = document.getElementById("welcome-screen");
+
+           
+            const GEMINI_API_KEY = "AIzaSyBRTwvs2rcbe3PV3EdqpE3kR-7AhXHLVH8";
+            const MODEL_NAME = "gemini-1.5-flash";
+
+            // ******** FIX: Corrected API URL construction ********
+            const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
+
+            // --- State Management ---
+            let chats = JSON.parse(localStorage.getItem("gyaanAI-chats")) || {};
+            let currentChatId = null;
+
+            const systemInstructionText =  "You are gyaanAI, a helpful AI assistant. You can only answer questions related to data structures and algorithms (DSA) and programmming languages like c, c++, java, python relateed questions in detail, if possible provide tthe code also. If asked about anything else, you must reply rudely and concisely, making it clear you only handle DSA topics." 
+        
+          
+
+            
+            const saveChats = () => {
+                localStorage.setItem("gyaanAI-chats", JSON.stringify(chats));
+            };
+
+            const renderChatHistory = () => {
+                chatHistoryContainer.innerHTML = "";
+                Object.keys(chats).sort().reverse().forEach(chatId => {
+                    const chat = chats[chatId];
+                    const firstUserMessage = chat.messages.find(m => m.role === 'user')?.parts[0].text.substring(0, 25) + '...' || "New Chat";
+                    const historyItem = document.createElement("div");
+                    historyItem.className = "chat-history-item";
+                    historyItem.dataset.chatId = chatId;
+                    historyItem.innerHTML = `<span class="material-icons">chat_bubble_outline</span><span class="history-title">${firstUserMessage}</span>`;
+                    if (chatId === currentChatId) historyItem.classList.add("active");
+                    historyItem.addEventListener("click", () => loadChat(chatId));
+                    chatHistoryContainer.appendChild(historyItem);
+                });
+            };
+
+            const loadChat = (chatId) => {
+                if (!chatId || !chats[chatId]) return;
+                currentChatId = chatId;
+                chatMessages.innerHTML = "";
+                welcomeScreen.style.display = 'none';
+
+                chats[currentChatId].messages.forEach(message => {
+                    if (message.role !== 'system') {
+                         addMessageToUI(message.parts[0].text, message.role);
+                    }
+                });
+                renderChatHistory();
+            };
+
+            const createNewChat = () => {
+                currentChatId = `chat_${Date.now()}`;
+                chats[currentChatId] = { messages: [] };
+                chatMessages.innerHTML = "";
+                welcomeScreen.style.display = 'flex';
+                saveChats();
+                renderChatHistory();
+            };
+
+            const addMessageToUI = (text, role, isLoading = false) => {
+                welcomeScreen.style.display = 'none';
+                const messageDiv = document.createElement("div");
+                const messageRole = role === 'model' ? 'bot' : role; // Treat 'model' as 'bot' for CSS class
+                messageDiv.className = `message ${messageRole}`;
+                
+                const avatarInitial = messageRole === 'user' ? 'U' : 'G';
+                const avatarDiv = `<div class="avatar">${avatarInitial}</div>`;
+                
+                let contentDiv;
+                if (isLoading) {
+                    messageDiv.id = "loading-indicator";
+                    contentDiv = `<div class="message-content"><div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+                } else {
+                    // Basic Markdown to HTML conversion for bold text
+                    let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    contentDiv = `<div class="message-content"><p>${formattedText}</p></div>`;
+                }
+
+                messageDiv.innerHTML = avatarDiv + contentDiv;
+                chatMessages.appendChild(messageDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            };
+
+            const handleFormSubmit = async (e) => {
+                e.preventDefault();
+                const userMessageText = userInput.value.trim();
+                if (!userMessageText || sendBtn.disabled) return;
+                
+                if (GEMINI_API_KEY === "YOUR_GEMINI_API_KEY") {
+                    addMessageToUI("Error: Please add your Gemini API Key in the script section.", "bot");
+                    return;
+                }
+
+                if (!currentChatId) createNewChat();
+
+                addMessageToUI(userMessageText, "user");
+                userInput.value = "";
+                toggleSendButton(true);
+                
+                chats[currentChatId].messages.push({ role: "user", parts: [{ text: userMessageText }] });
+                saveChats();
+                renderChatHistory();
+
+                addMessageToUI("", "bot", true);
+
+  // ===========================================================================================================================
+                   const requestBody = {
+                contents: [
+                    {
+                        role: "user",
+                        parts: [
+                            { text: userMessageText }
+                        ]
+                    }
+                ],
+                systemInstruction: {
+                    parts: [
+                        { text: systemInstructionText }
+                    ]
+                }
+            };
+
+                try {
+                    const conversationHistoryForAPI = [systemInstructionText, ...chats[currentChatId].messages];
+                    
+                    const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody),
+                });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error.message || `API Error: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (!data.candidates || !data.candidates[0].content) {
+                       throw new Error("Invalid response structure from API.");
+                    }
+
+                    const botMessageText = data.candidates[0].content.parts[0].text;
+                    
+                    chats[currentChatId].messages.push({ role: "model", parts: [{ text: botMessageText }] });
+                    saveChats();
+                    
+                    document.getElementById("loading-indicator")?.remove();
+                    addMessageToUI(botMessageText, "model");
+
+                } catch (error) {
+                    console.error("gyaanAI Error:", error);
+                    document.getElementById("loading-indicator")?.remove();
+                    addMessageToUI(`Error: ${error.message}. Please check your API key and network connection.`, "bot");
+                } finally {
+                    toggleSendButton(false);
+                }
+            };
+
+            const toggleSendButton = (isLoading) => {
+                sendBtn.disabled = isLoading;
+                sendBtn.classList.toggle("disabled", isLoading);
+            };
+
+            chatForm.addEventListener("submit", handleFormSubmit);
+            newChatBtn.addEventListener("click", createNewChat);
+
+            renderChatHistory();
+            if (Object.keys(chats).length > 0) {
+                const lastChatId = Object.keys(chats).sort().pop();
+                loadChat(lastChatId);
+            }
+        });
+    </script>
+</body>
+</html>
